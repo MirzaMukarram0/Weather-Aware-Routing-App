@@ -1,0 +1,34 @@
+---
+description: Architecture — Django/React boundaries, layering, data flow, API contract.
+alwaysApply: true
+---
+
+# Architecture
+
+## Stack (locked)
+
+Django + DRF · HERE Routing v8 / Geocoding · Open-Meteo · Vite + React + TypeScript · MapLibre (`react-map-gl`) + deck.gl. Frontend never calls HERE or Open-Meteo directly.
+
+## Layering (do not blur)
+
+| Layer | Owns | Must not |
+|---|---|---|
+| `planner/providers/*` | HTTP to HERE / Open-Meteo, unit normalization, caching | Risk rules, ranking |
+| `planner/domain/*` | Pure functions: checkpoints, ETAs, risk, ranking, heatmap grid | I/O, Django imports, HTTP |
+| `planner/api/*` | Input validation, orchestration, response shape | Business rules inline |
+| `frontend/src/api` | Typed fetch client | UI state |
+| `frontend/src/map` | Layer builders, map view | Fetching, business rules |
+| `frontend/src/components` | Form, cards, legend, slider | Risk math (backend owns it) |
+
+## Data flow
+
+`POST /api/plan` → geocode → HERE 3 routes (fallback via-point if <3) → checkpoints + ETAs → dedupe + batch Open-Meteo → classify → summarize → rank → response.
+`POST /api/heatmap` (route geometries + departure) → corridor grid → 48 hourly values per cell → response. Separate so routes render first.
+
+## Invariants
+
+1. Risk is computed **only** in `domain/risk.py`; the frontend renders levels, never recomputes them.
+2. Provider responses are normalized to internal units (miles, mph, in/hr, UTC datetimes) at the provider boundary.
+3. Independent provider calls (per route, per weather batch) run concurrently.
+4. API keys live in backend env only. Never log or return them.
+5. Response types are defined once per side (DRF serializers ↔ `frontend/src/types`) and kept in sync.

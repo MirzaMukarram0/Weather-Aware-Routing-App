@@ -1,0 +1,32 @@
+---
+description: Weather-Aware Truck Routing — source-of-truth docs, grading weights, scope boundaries.
+alwaysApply: true
+---
+
+# Project context
+
+Weather-Aware Truck Routing: React + Django app recommending the safest of 3 truck routes based on weather at each checkpoint's ETA, load weight, and travel time. Graded assessment — **correctness and clarity over extra features.**
+
+## Source of truth (read when relevant)
+
+1. `fs-assessment-spotter.pdf` — original requirements
+2. `AGENTS.md` — locked decisions + interpretations of ambiguous rules
+3. `PROGRESS.md` — built vs remaining
+4. `.cursor/rules/*` — guardrails
+
+## Grading weights (use them to break ties)
+
+- 40% routes, weather, risk & recommendation logic → correctness, tests
+- 40% UI, map & heatmap smoothness/performance → WebGL, no refetch on slider
+- 15% code quality → small focused modules, clean boundaries
+- 5% docs & walkthrough → README states every assumption
+
+## In scope
+
+Origin/destination/departure/load form · 3 HERE truck routes · checkpoints at 10/25/50 mi · weather at ETA · risk + load rules · ranked recommendation · map with routes, checkpoints, risk, ETAs, summaries · corridor heatmap with 0–48 h slider · hosting · README.
+
+## Out of scope (do not build unless asked)
+
+Auth/accounts, persistence of trips, own routing engine, live traffic, hours-of-service/rest stops, notifications, mobile app, i18n.
+
+Do not invent product behavior. Ambiguity → add a line to `AGENTS.md` "Interpretations" and a test, or ask.

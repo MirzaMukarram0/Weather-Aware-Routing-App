@@ -1,0 +1,38 @@
+---
+description: Agent workflow — scoping, build order, done gates, progress tracking, protected files.
+alwaysApply: true
+---
+
+# AI workflow
+
+## Approach
+
+Understand first: read the relevant requirement, `AGENTS.md` interpretations, and the code you touch; trace the real flow end to end. Then implement the smallest correct change.
+
+## Build order (one unit at a time)
+
+1. Risk engine + tests
+2. HERE routing (3 routes + fallback), checkpoints, ETAs
+3. Open-Meteo batched/cached weather → `/api/plan`
+4. Map UI: routes, checkpoints, cards, recommendation
+5. Corridor heatmap + 0–48 h slider, performance pass
+6. Deploy, README, walkthrough
+
+Don't mix units (e.g. heatmap + ranking rewrite) in one change unless asked.
+
+## Missing requirements
+
+Ambiguous rule → pick the conservative interpretation, add it to `AGENTS.md` "Interpretations", cover with a test, mention it in the reply. Provider capability unknown → check docs, don't guess parameter names.
+
+## Done gates
+
+1. Matches requirements + interpretations.
+2. Logic changes have tests; `python manage.py test` passes.
+3. `ruff check` / `npm run typecheck && npm run lint` pass for touched side.
+4. Happy path smoke-tested (endpoint call or UI run) when feasible.
+5. No secrets client-side or in git.
+6. `PROGRESS.md` updated; if a decision changed, update `AGENTS.md` and the matching rule.
+
+## Protected (don't touch unless asked)
+
+`.env*` secrets · `fs-assessment-spotter.pdf` · unrelated refactors while fixing a feature.

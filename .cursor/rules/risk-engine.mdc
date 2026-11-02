@@ -1,0 +1,48 @@
+---
+description: Exact risk thresholds, load rules, mile attribution, and ranking. The 40% logic grade lives here.
+globs: backend/planner/domain/**/*.py,backend/planner/tests/**/*.py
+alwaysApply: false
+---
+
+# Risk engine
+
+Pure functions, no I/O. Every rule below has a boundary test.
+
+## Levels
+
+`IntEnum`: `LOW=0, MODERATE=1, HIGH=2, SEVERE=3, NO_TRAVEL=4`. `UNKNOWN` when data is missing (excluded from avg, shown in UI, never coerced to LOW).
+
+## Thresholds (lower bound inclusive)
+
+| Level | Wind mph | Rain in/hr | Snow in/hr |
+|---|---|---|---|
+| LOW | < 25 | < 0.10 | < 0.5 |
+| MODERATE | 25–34 | 0.10–<0.25 | 0.5–<1.0 |
+| HIGH | 35–44 | 0.25–<0.50 | 1.0–<2.0 |
+| SEVERE | 45–54 | 0.50–1.00 | 2.0–3.0 |
+| NO_TRAVEL | ≥ 55 | > 1.00 | > 3.0 |
+
+Wind input = `max(sustained, gust)`. Checkpoint level = `max(wind_level, rain_level, snow_level)`.
+
+## Load rules (wind only, applied before the max)
+
+- wind ≥ 55 → NO_TRAVEL (any load)
+- 45–54 and load > 30,000 lb → NO_TRAVEL
+- 35–44 and load > 40,000 lb → SEVERE
+
+Express thresholds as data (tuples of upper bounds), not if-chains:
+
+```python
+# ❌ if rain < 0.10: ... elif rain < 0.25: ... (×3 copies)
+# ✅ one `level_for(value, bands)` + a band table per condition
+```
+
+## Mile attribution & ranking
+
+- Each checkpoint owns half the distance to each neighbor; owned miles sum to route length (assert in tests).
+- `avg_risk` = distance-weighted mean of known levels.
+- Rank key ascending: `(no_travel_mi, severe_mi, high_mi, avg_risk, duration_s)`. Return the reason (which key decided) for the UI.
+
+## Required tests
+
+Every band edge (24.9/25/34.9/35/…/54.9/55; 0.0999/0.10/0.25/0.50/1.00/1.0001; snow equivalents), both load rules at 30,000 / 30,001 / 40,000 / 40,001 lb, gust > sustained, mile sum invariant, each ranking tie-break.

@@ -1,0 +1,32 @@
+---
+description: React + MapLibre + deck.gl conventions focused on map and heatmap smoothness (40% of the grade).
+globs: frontend/**/*.{ts,tsx,css}
+alwaysApply: false
+---
+
+# Frontend (React + MapLibre + deck.gl)
+
+## Performance rules (non-negotiable)
+
+- Render routes, checkpoints, and heatmap as **deck.gl/MapLibre WebGL layers**. No per-checkpoint React/DOM markers.
+- Heatmap data for all 48 hours is fetched **once** per plan. The slider only changes the hour index → no network, no re-parsing.
+- Precompute per-hour typed arrays (or `getWeight` reading `values[hour]`) and pass `updateTriggers: { getWeight: hour }` so only weights update.
+- Memoize layer instances (`useMemo`) keyed on data + the minimal state they depend on; stable accessor functions.
+- Keep slider state local to the slider/map; do not re-render the form or route list on drag.
+- Fit bounds once per new plan, not on every render.
+
+## UI requirements
+
+- All 3 routes visible; recommended route emphasized; clicking a route card highlights it on the map.
+- Checkpoint tooltip: ETA (local + relative), wind/gust, rain, snow, level.
+- Route card: distance, duration, miles per level, avg risk, NO_TRAVEL flag, and the reason it was (not) recommended.
+- One shared color scale for levels (LOW→NO_TRAVEL, UNKNOWN gray) used by map, legend, and cards.
+- Loading, empty, and error states for both `/plan` and `/heatmap`.
+- Accessible: labeled inputs, keyboard-operable slider, legend not color-only (show level text).
+
+## Code
+
+- TypeScript strict, no `any`. Response types in `src/types` mirror backend serializers.
+- Fetching in `src/api` + hooks; components stay presentational.
+- No business logic on the client — risk levels and recommendation come from the backend.
+- No state library unless props/context become painful; React state is enough here.

@@ -1,0 +1,28 @@
+---
+description: Thermo-nuclear quality bar applied while writing code — structure, file size, boundaries, no spaghetti.
+alwaysApply: true
+---
+
+# Code quality bar (thermo-nuclear, applied while writing)
+
+Working code is not the bar. Every change must leave the structure as simple or simpler than before.
+
+## Always
+
+- **Look for the code-judo move first:** a reframing that deletes branches, modes, or layers instead of rearranging them.
+- **Data over conditionals:** threshold tables, typed models, dispatch maps instead of `if/elif` ladders or scattered special cases.
+- **Canonical layer:** logic lives where `architecture.mdc` says; no feature checks leaking into shared paths.
+- **Files:** aim ≤ ~300 lines; anything nearing 500 gets split before adding more. Functions do one thing.
+- **Types/boundaries:** no `any`, no cast-heavy code, no unnecessary optionals. Validate external data once at the boundary, then trust typed values inward.
+- **No silent fallbacks** that hide an unclear invariant (e.g. missing weather → LOW). Make the state explicit.
+- **No thin wrappers** or pass-through helpers that add indirection without clarity.
+- **No copy-paste:** second occurrence → extract a pure helper.
+- **Parallel when independent:** don't serialize independent I/O; keep multi-step updates atomic.
+
+## Naming & comments
+
+Descriptive names (`severe_miles`, `eta_utc`), units in names where ambiguous (`wind_mph`, `rain_in_hr`, `weight_lb`). Comments only for constraints the code can't show (provider quirks, unit conversions, `ponytail:` ceilings).
+
+## Reviews
+
+For a strict review, use the `thermo-nuclear-code-quality-review` skill; for an over-engineering pass, use `ponytail-review`. Prioritize structural findings over nits.
