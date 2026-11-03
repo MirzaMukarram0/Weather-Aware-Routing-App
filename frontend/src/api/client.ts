@@ -1,4 +1,4 @@
-const base = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
+const base = import.meta.env.VITE_API_URL ?? "";
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${base}${path}`, {
@@ -10,7 +10,10 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.error ?? `Request failed (${res.status})`);
+    const details = Object.entries(body).map(([field, errors]) =>
+      `${field.replaceAll('_', ' ')}: ${Array.isArray(errors) ? errors.join(' ') : String(errors)}`,
+    ).join(' · ');
+    throw new Error(typeof body.error === 'string' ? body.error : details || `Request failed (${res.status})`);
   }
   return res.json() as Promise<T>;
 }
@@ -49,4 +52,22 @@ export function postHeatmap(
 
 export function getHealth() {
   return apiFetch<{ status: string }>("/api/health");
+}
+
+const MIN_LOCATION_QUERY = 2;
+
+/** Use explicit selection, or Nominatim top hit for free-text. */
+export async function resolveLocationQuery(
+  query: string,
+  selected: import("../types/plan").LocationItem | null,
+): Promise<import("../types/plan").LocationItem | null> {
+  if (selected && selected.label === query.trim()) {
+    return selected;
+  }
+  const trimmed = query.trim();
+  if (trimmed.length < MIN_LOCATION_QUERY) {
+    return null;
+  }
+  const res = await searchLocations(trimmed);
+  return res.items[0] ?? null;
 }

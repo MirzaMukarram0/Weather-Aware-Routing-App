@@ -25,6 +25,7 @@ export interface Checkpoint {
     snow_in_hr: number | null;
   };
   risk_level: RiskLevel;
+  weather_complete: boolean;
 }
 
 export interface RouteSummary {
@@ -40,6 +41,8 @@ export interface RouteSummary {
 
 export interface RoutePlan {
   id: string;
+  rank: number;
+  comparison_reason: string;
   distance_mi: number;
   duration_s: number;
   polyline: string;
@@ -72,6 +75,7 @@ export interface HeatmapResponse {
   cell_mi: number;
   timestamps_utc: string[];
   cells: HeatmapCell[];
+  warnings?: string[];
 }
 
 export interface PlanRequest {
