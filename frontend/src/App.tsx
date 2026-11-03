@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from "react";
-import { postHeatmap, postPlan } from "./api/client";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getHealth, postHeatmap, postPlan } from "./api/client";
 import { HeatmapSlider } from "./components/HeatmapSlider";
 import { Legend } from "./components/Legend";
 import { RouteCards } from "./components/RouteCards";
@@ -21,6 +21,12 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    getHealth().catch(() => {
+      setError("Cannot reach the API. Check VITE_API_URL and that the backend is running.");
+    });
+  }, []);
 
   const onSubmit = useCallback(async (values: TripFormValues) => {
     abortRef.current?.abort();
