@@ -41,7 +41,7 @@ Express thresholds as data (tuples of upper bounds), not if-chains:
 
 - Each checkpoint owns half the distance to each neighbor; owned miles sum to route length (assert in tests).
 - `avg_risk` = distance-weighted mean of known levels.
-- Rank key ascending: `(no_travel_mi, severe_mi, high_mi, avg_risk, duration_s)`. Return the reason (which key decided) for the UI.
+- Rank key ascending: `(no_travel_mi, severe_mi, high_mi, avg_risk, duration_s)`. Recommend rank-1 always; attach warnings if NO_TRAVEL miles or incomplete weather on winner. Return tie-break reason for UI.
 
 ## Required tests
 

@@ -1,21 +1,27 @@
 # Progress
 
-Canonical build status. Keep entries short; update after each meaningful unit.
-
 ## Milestones
 
-- [ ] 1. Risk engine (`domain/risk.py`, ranking, mile attribution) + boundary tests
-- [ ] 2. HERE routing (3 truck routes + via-point fallback), checkpoints, ETAs
-- [ ] 3. Open-Meteo batched + cached weather, `POST /api/plan`
-- [ ] 4. Map UI: routes, checkpoints, route cards, recommendation
-- [ ] 5. Corridor heatmap + 0–48 h slider, performance pass
-- [ ] 6. Deploy (backend + frontend), README with assumptions, Loom walkthrough
+- [x] 0. Docs reconciled with phased build plan
+- [x] 1. Scaffold + CI + Docker + provider spike script
+- [x] 2. Risk engine + tests
+- [x] 3. HERE routing, checkpoints, ETAs, `/api/locations`
+- [x] 4. Open-Meteo + `/api/plan` + form/cards
+- [x] 5. Map UI (MapLibre + deck.gl)
+- [x] 6. Heatmap + 49-step slider (client-side hour index)
+- [x] 7. README + deploy instructions (hosted URLs: set at deploy time)
 
-## Done
+## Demo routes (verify with `python backend/scripts/provider_spike.py`)
 
-- Requirements reviewed; decisions locked in `AGENTS.md`.
-- Cursor rules and `AGENTS.md` created.
+- Chicago, IL → Denver, CO
+- Atlanta, GA → Dallas, TX
 
-## Open questions
+## Hosted URLs
 
-- None yet.
+- Frontend: _deploy to Vercel_
+- Backend: _deploy to Cloud Run_
+
+## CI
+
+- Backend: `manage.py test`, `ruff check`
+- Frontend: `typecheck`, `lint`, `build`

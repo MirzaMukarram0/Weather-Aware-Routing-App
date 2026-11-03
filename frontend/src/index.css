@@ -1,0 +1,163 @@
+:root {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  line-height: 1.5;
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) 1fr;
+  min-height: 100vh;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 50vh;
+  }
+}
+
+.sidebar {
+  padding: 1rem 1.25rem;
+  overflow-y: auto;
+  border-right: 1px solid #cbd5e1;
+  background: #fff;
+}
+
+.map-panel {
+  min-height: 50vh;
+}
+
+.map-wrap {
+  width: 100%;
+  height: 100%;
+  min-height: 50vh;
+}
+
+.trip-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.trip-form input,
+.trip-form select,
+button {
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+}
+
+button {
+  cursor: pointer;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  font-weight: 600;
+}
+
+button.secondary {
+  background: #e2e8f0;
+  color: #0f172a;
+  margin-bottom: 0.75rem;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.muted {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.route-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.route-card {
+  text-align: left;
+  background: #f8fafc;
+  color: inherit;
+  border: 2px solid transparent;
+}
+
+.route-card.selected {
+  border-color: #2563eb;
+}
+
+.badge {
+  display: inline-block;
+  background: #059669;
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  margin-bottom: 0.25rem;
+}
+
+.stats,
+.reason {
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.banner {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.banner.warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.banner.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.legend-item i {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.heatmap-slider {
+  margin-top: 1rem;
+}
+
+.heatmap-slider input[type="range"] {
+  width: 100%;
+}

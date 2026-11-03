@@ -20,10 +20,14 @@ Django + DRF · HERE Routing v8 / Geocoding · Open-Meteo · Vite + React + Type
 | `frontend/src/map` | Layer builders, map view | Fetching, business rules |
 | `frontend/src/components` | Form, cards, legend, slider | Risk math (backend owns it) |
 
+## Endpoints
+
+`GET /api/health` · `GET /api/locations` · `POST /api/plan` · `POST /api/heatmap`
+
 ## Data flow
 
-`POST /api/plan` → geocode → HERE 3 routes (fallback via-point if <3) → checkpoints + ETAs → dedupe + batch Open-Meteo → classify → summarize → rank → response.
-`POST /api/heatmap` (route geometries + departure) → corridor grid → 48 hourly values per cell → response. Separate so routes render first.
+`POST /api/plan` → geocode → HERE 3 routes (via-point fallback if <3) → checkpoints + ETAs → batch Open-Meteo → classify → summarize → rank all → recommend #1 with warnings → response.
+`POST /api/heatmap` (geometries + departure + load) → corridor grid (≤500 cells) → **49** hourly risk values per cell → response. Fetch after routes render.
 
 ## Invariants
 

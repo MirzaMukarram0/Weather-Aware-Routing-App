@@ -15,14 +15,14 @@ One app: `planner`. `providers/` (HTTP), `domain/` (pure), `api/` (views + seria
 - HERE Routing v8: `transportMode=truck`, request alternatives, send gross weight in **kg** (lb × 0.45359237). Ask for polyline + per-span duration/length so ETAs follow real speeds.
 - If HERE returns < 3 routes, request again with an offset via point near the midpoint; dedupe near-identical geometries.
 - Open-Meteo: batch many coordinates per request, `wind_speed_unit=mph`, `precipitation_unit=inch`, `timezone=UTC`, hourly `wind_speed_10m, wind_gusts_10m, rain, showers, snowfall`. Read `hourly_units` and fail loudly if units differ from expected.
-- Round coordinates (~0.1°) for cache keys; cache via Django cache with a TTL (forecasts ~30 min, routes/geocodes longer).
+- Cache keys use **precise normalized coordinates** and all params that affect the result (no coarse rounding for weather). TTL: weather ~30 min, routes ~15 min, geocode ~24 h.
 - Run independent calls concurrently (`httpx.AsyncClient` + `asyncio.gather`, or a thread pool). Always set timeouts.
 
 ## Checkpoints & ETA
 
 - Walk the decoded polyline with haversine distance; interpolate a point every N miles; always include origin and destination.
 - ETA = departure + cumulative duration at that distance, interpolated from HERE span durations (not distance ÷ constant speed).
-- Pick the forecast hour nearest to the ETA (UTC).
+- Wind: nearest forecast hour to ETA (UTC); tie → later hour. Precip: hour ending at or after ETA. Rain = rain + showers.
 
 ## API
 
