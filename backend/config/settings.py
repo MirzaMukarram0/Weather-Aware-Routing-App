@@ -43,9 +43,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = [
-    o.strip()
-    for o in _env("CORS_ALLOWED_ORIGINS", "http://localhost:5173").split(",")
-    if o.strip()
+    o.strip() for o in _env("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if o.strip()
 ]
 
 REST_FRAMEWORK = {
@@ -53,7 +51,12 @@ REST_FRAMEWORK = {
     "UNAUTHENTICATED_USER": None,
 }
 
-HERE_API_KEY = _env("HERE_API_KEY")
+OSRM_BASE_URL = _env("OSRM_BASE_URL", "https://router.project-osrm.org")
+NOMINATIM_BASE_URL = _env("NOMINATIM_BASE_URL", "https://nominatim.openstreetmap.org")
+NOMINATIM_USER_AGENT = _env(
+    "NOMINATIM_USER_AGENT",
+    "WeatherAwareRoutingApp/1.0 (local dev; set contact in production)",
+)
 OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast"
 
 CACHES = {

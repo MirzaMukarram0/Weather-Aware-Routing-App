@@ -1,4 +1,4 @@
-"""Optional live provider check. Requires HERE_API_KEY in env."""
+"""Optional live provider check. No API keys required."""
 
 import os
 import sys
@@ -11,8 +11,10 @@ django.setup()
 
 from datetime import UTC, datetime, timedelta  # noqa: E402
 
-from planner.providers.here import truck_routes  # noqa: E402
-from planner.providers.open_meteo import fetch_hourly_series  # noqa: E402
+from planner.domain.geo import coord_key  # noqa: E402
+from planner.providers.nominatim import autosuggest  # noqa: E402
+from planner.providers.open_meteo import fetch_series_for_locations  # noqa: E402
+from planner.providers.osrm import truck_routes  # noqa: E402
 
 TRIPS = [
     ((41.8781, -87.6298), (39.7392, -104.9903), "Chicago → Denver"),
@@ -21,14 +23,15 @@ TRIPS = [
 
 
 def main() -> int:
-    if not os.environ.get("HERE_API_KEY"):
-        print("Skip: HERE_API_KEY not set")
-        return 0
+    places = autosuggest("Chicago, IL")
+    print(f"Nominatim: {len(places)} result(s) for Chicago")
     for origin, dest, label in TRIPS:
-        routes, warnings = truck_routes(origin, dest, 25_000)
+        routes, warnings = truck_routes(origin, dest)
         print(f"{label}: {len(routes)} route(s)", warnings)
     now = datetime.now(UTC)
-    data = fetch_hourly_series(40.0, -75.0, now, now + timedelta(hours=48))
+    loc = coord_key(40.0, -75.0)
+    batch = fetch_series_for_locations([loc], now, now + timedelta(hours=48))
+    data = batch[loc]
     hourly = data.get("hourly", {})
     assert "wind_speed_10m" in hourly
     print("Open-Meteo OK")
