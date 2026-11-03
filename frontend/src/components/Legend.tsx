@@ -1,18 +1,25 @@
 import type { RiskLevel } from "../types/plan";
 import { LEVEL_COLORS } from "../map/utils";
 
-const LABELS: RiskLevel[] = ["LOW", "MODERATE", "HIGH", "SEVERE", "NO_TRAVEL", "UNKNOWN"];
+const LABELS: { level: RiskLevel; label: string }[] = [
+  { level: "LOW", label: "Low" },
+  { level: "MODERATE", label: "Moderate" },
+  { level: "HIGH", label: "High" },
+  { level: "SEVERE", label: "Severe" },
+  { level: "NO_TRAVEL", label: "No travel" },
+  { level: "UNKNOWN", label: "Unknown" },
+];
 
 export function Legend() {
   return (
-    <div className="legend" aria-label="Risk legend">
-      {LABELS.map((level) => (
-        <span key={level} className="legend-item">
-          <i style={{ background: rgbaCss(LEVEL_COLORS[level]) }} />
-          {level.replace("_", " ")}
-        </span>
+    <ul className="legend" aria-label="Risk legend">
+      {LABELS.map(({ level, label }) => (
+        <li key={level} className="legend__item">
+          <span className="legend__swatch" style={{ background: rgbaCss(LEVEL_COLORS[level]) }} />
+          {label}
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 

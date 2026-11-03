@@ -1,17 +1,18 @@
 import type { RiskLevel } from "../types/plan";
 
 export const LEVEL_COLORS: Record<RiskLevel, [number, number, number, number]> = {
-  LOW: [34, 197, 94, 180],
-  MODERATE: [234, 179, 8, 180],
-  HIGH: [249, 115, 22, 190],
-  SEVERE: [239, 68, 68, 200],
-  NO_TRAVEL: [127, 29, 29, 220],
-  UNKNOWN: [156, 163, 175, 120],
+  LOW: [28, 155, 119, 230],
+  MODERATE: [215, 169, 36, 230],
+  HIGH: [235, 124, 47, 240],
+  SEVERE: [217, 70, 75, 240],
+  NO_TRAVEL: [130, 32, 66, 250],
+  UNKNOWN: [139, 151, 166, 210],
 };
 
 export function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.round((seconds % 3600) / 60);
+  const minutes = Math.round(seconds / 60);
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
