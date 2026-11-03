@@ -1,6 +1,8 @@
 # Weather-Aware Truck Routing
 
-React + Django app that recommends the safest of up to three **HERE truck routes** using **Open-Meteo** weather at each checkpoint’s ETA, load-aware wind rules, and a corridor **heatmap** (hours 0–48 from departure).
+React + Django app that recommends the safest of up to three **OSRM (OpenStreetMap) routes** using **Open-Meteo** weather at each checkpoint’s ETA, load-aware wind rules, and a corridor **heatmap** (hours 0–48 from departure).
+
+**Routing/geocoding:** [OSRM](https://project-osrm.org/) + [Nominatim](https://nominatim.org/) — free, no credit card. Public demo servers are for development; load weight affects **weather risk**, not route geometry (OSRM `driving` profile).
 
 ## Live URLs
 
@@ -18,16 +20,15 @@ cd backend
 python -m venv .venv
 .venv\Scripts\activate   # Windows
 pip install -r requirements.txt
-copy .env.example .env     # add HERE_API_KEY
+copy .env.example .env     # optional: NOMINATIM_USER_AGENT contact email
 python manage.py runserver 8080
 ```
 
 Health: `http://localhost:8080/api/health`
 
-Provider spike (optional, needs key):
+Provider spike (optional, hits live OSRM/Nominatim/Open-Meteo):
 
 ```bash
-set HERE_API_KEY=your_key
 python scripts/provider_spike.py
 ```
 
@@ -50,7 +51,7 @@ docker compose up --build
 
 ## Architecture
 
-- **Backend:** Django REST — `planner/providers` (HERE, Open-Meteo), `planner/domain` (risk, checkpoints, ranking, heatmap grid), `planner/api` (orchestration).
+- **Backend:** Django REST — `planner/providers` (OSRM, Nominatim, Open-Meteo), `planner/domain` (risk, checkpoints, ranking, heatmap grid), `planner/api` (orchestration).
 - **Frontend:** Vite + React + MapLibre + deck.gl. Slider updates heatmap hour **without refetch**.
 
 ```
@@ -90,8 +91,8 @@ GET  /api/health
      --cpu 1 \
      --min-instances 0 \
      --max-instances 1 \
-     --set-env-vars "DEBUG=false,ALLOWED_HOSTS=YOUR_CLOUD_RUN_HOST,CORS_ALLOWED_ORIGINS=https://YOUR_VERCEL_APP.vercel.app" \
-     --set-secrets "HERE_API_KEY=here-api-key:latest,SECRET_KEY=django-secret:latest"
+     --set-env-vars "DEBUG=false,ALLOWED_HOSTS=YOUR_CLOUD_RUN_HOST,CORS_ALLOWED_ORIGINS=https://YOUR_VERCEL_APP.vercel.app,NOMINATIM_USER_AGENT=YourApp/1.0 (you@example.com)" \
+     --set-secrets "SECRET_KEY=django-secret:latest"
    ```
 
    For demo recording, temporarily `--min-instances 1` to avoid cold starts.
@@ -122,12 +123,12 @@ GitHub Actions: `.github/workflows/ci.yml`
 
 ## Known limits
 
-- Fewer than 3 routes when HERE returns duplicates (via-point fallback once; message in UI).
-- Heatmap capped at **500 cells** (grid coarsens); first heatmap load can take tens of seconds on long trips.
-- Cloud Run **cold start** on first request when min instances = 0.
+- Fewer than 3 routes when OSRM returns duplicates (via-point fallback once; message in UI).
+- Nominatim/OSRM public servers rate-limit heavy use — cache helps; self-host for production scale.
 
 ## Attribution
 
-- Routing/geocoding: [HERE](https://www.here.com/)
+- Routing: [OSRM / OpenStreetMap](https://openstreetmap.org/copyright)
+- Geocoding: [Nominatim / OSM](https://nominatim.org/)
 - Weather: [Open-Meteo](https://open-meteo.com/)
 - Basemap: [OpenFreeMap](https://openfreemap.org/)

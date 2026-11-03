@@ -7,13 +7,13 @@ alwaysApply: true
 
 ## Stack (locked)
 
-Django + DRF · HERE Routing v8 / Geocoding · Open-Meteo · Vite + React + TypeScript · MapLibre (`react-map-gl`) + deck.gl. Frontend never calls HERE or Open-Meteo directly.
+Django + DRF · **OSRM** routing · **Nominatim** geocoding · Open-Meteo · Vite + React + TypeScript · MapLibre (`react-map-gl`) + deck.gl. Frontend never calls OSRM, Nominatim, or Open-Meteo directly.
 
 ## Layering (do not blur)
 
 | Layer | Owns | Must not |
 |---|---|---|
-| `planner/providers/*` | HTTP to HERE / Open-Meteo, unit normalization, caching | Risk rules, ranking |
+| `planner/providers/*` | HTTP to OSRM / Nominatim / Open-Meteo, unit normalization, caching | Risk rules, ranking |
 | `planner/domain/*` | Pure functions: checkpoints, ETAs, risk, ranking, heatmap grid | I/O, Django imports, HTTP |
 | `planner/api/*` | Input validation, orchestration, response shape | Business rules inline |
 | `frontend/src/api` | Typed fetch client | UI state |
@@ -26,7 +26,7 @@ Django + DRF · HERE Routing v8 / Geocoding · Open-Meteo · Vite + React + Type
 
 ## Data flow
 
-`POST /api/plan` → geocode → HERE 3 routes (via-point fallback if <3) → checkpoints + ETAs → batch Open-Meteo → classify → summarize → rank all → recommend #1 with warnings → response.
+`POST /api/plan` → geocode → OSRM up to 3 routes (via-point fallback if <3) → checkpoints + ETAs → batch Open-Meteo → classify → summarize → rank all → recommend #1 with warnings → response.
 `POST /api/heatmap` (geometries + departure + load) → corridor grid (≤500 cells) → **49** hourly risk values per cell → response. Fetch after routes render.
 
 ## Invariants

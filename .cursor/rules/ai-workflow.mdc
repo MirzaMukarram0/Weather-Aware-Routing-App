@@ -12,7 +12,7 @@ Understand first: read the relevant requirement, `AGENTS.md` interpretations, an
 ## Build order (one unit at a time)
 
 1. Risk engine + tests
-2. HERE routing (3 routes + fallback), checkpoints, ETAs
+2. OSRM routing (3 routes + fallback), checkpoints, ETAs
 3. Open-Meteo batched/cached weather → `/api/plan`
 4. Map UI: routes, checkpoints, cards, recommendation
 5. Corridor heatmap + 0–48 h slider, performance pass

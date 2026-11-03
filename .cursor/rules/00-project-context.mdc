@@ -23,7 +23,7 @@ Weather-Aware Truck Routing: React + Django app recommending the safest of 3 tru
 
 ## In scope
 
-Origin/destination/departure/load form · 3 HERE truck routes · checkpoints at 10/25/50 mi · weather at ETA · risk + load rules · ranked recommendation · map with routes, checkpoints, risk, ETAs, summaries · corridor heatmap with 0–48 h slider · hosting · README.
+Origin/destination/departure/load form · 3 OSRM route alternatives · checkpoints at 10/25/50 mi · weather at ETA · risk + load rules · ranked recommendation · map with routes, checkpoints, risk, ETAs, summaries · corridor heatmap with 0–48 h slider · hosting · README.
 
 ## Out of scope (do not build unless asked)
 

@@ -20,7 +20,7 @@ React + Django app that helps a truck driver pick the safest route given weather
 
 | Concern | Decision |
 |---|---|
-| Routing + geocoding | HERE Routing v8 (`transportMode=truck`, alternatives) + Autosuggest. **Gross weight** lb → kg on routing requests. |
+| Routing + geocoding | **OSRM** (open-source driving routes, public demo server) + **Nominatim** (OSM geocoding). No API key. Load weight affects **risk rules only**, not OSRM geometry. |
 | Weather | Open-Meteo hourly, batched, `wind_speed_unit=mph`, `precipitation_unit=inch`. Rain = `rain + showers`. |
 | Backend | Django + DRF, stateless, Django cache (in-memory OK on Cloud Run). |
 | Frontend | Vite + React + TypeScript, MapLibre (`react-map-gl`) + deck.gl, OpenFreeMap Liberty basemap. |
@@ -32,7 +32,7 @@ React + Django app that helps a truck driver pick the safest route given weather
 | Endpoint | Purpose |
 |---|---|
 | `GET /api/health` | Liveness (no provider calls) |
-| `GET /api/locations?q=` | HERE autosuggest |
+| `GET /api/locations?q=` | Nominatim search (US-biased) |
 | `POST /api/plan` | Full trip plan + recommendation |
 | `POST /api/heatmap` | Corridor grid, 49 hourly risk layers |
 
@@ -46,7 +46,7 @@ React + Django app that helps a truck driver pick the safest route given weather
 - **Sampling:** 10 / 25 / 50 mi toggle, default 25; origin + destination always checkpoints.
 - **Mile attribution:** half gap to neighbors; sums to route length.
 - **Ranking:** all routes ranked `(no_travel_mi, severe_mi, high_mi, avg_risk, duration_s)` ascending. **Always recommend #1.** If winner has NO_TRAVEL miles or incomplete weather, show **prominent warning** + reason; never hide routes.
-- **Three routes:** primary + 2 alternatives; dedupe. If <3, one via-point fallback request; if still <3, explain in response.
+- **Three routes:** OSRM `alternatives=true`; if <3, one via-point request; dedupe geometries.
 - **Heatmap:** ~20 mi corridor half-width, ~10 mi cells, max 500 cells (coarsen + expose resolution). **49 timestamps:** departure + hours 0–48. Slider = corridor forecast at selected hour (not checkpoint ETAs). Categorical colors; UNKNOWN gray.
 - **Coverage:** validate forecast through last route ETA and departure+48h; missing future hour → UNKNOWN, no stale substitution.
 

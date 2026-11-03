@@ -5,7 +5,7 @@
 - [x] 0. Docs reconciled with phased build plan
 - [x] 1. Scaffold + CI + Docker + provider spike script
 - [x] 2. Risk engine + tests
-- [x] 3. HERE routing, checkpoints, ETAs, `/api/locations`
+- [x] 3. OSRM routing + Nominatim geocoding, checkpoints, ETAs, `/api/locations`
 - [x] 4. Open-Meteo + `/api/plan` + form/cards
 - [x] 5. Map UI (MapLibre + deck.gl)
 - [x] 6. Heatmap + 49-step slider (client-side hour index)
