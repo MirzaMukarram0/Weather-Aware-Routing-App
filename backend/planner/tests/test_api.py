@@ -1,4 +1,10 @@
-from django.test import Client, TestCase, override_settings
+from datetime import timedelta
+from unittest.mock import patch
+
+from django.test import Client, TestCase
+from django.utils import timezone
+
+from planner.providers.errors import ProviderError
 
 
 class HealthTests(TestCase):
@@ -13,8 +19,8 @@ class LocationApiTests(TestCase):
         res = Client().get("/api/locations")
         self.assertEqual(res.status_code, 400)
 
-    @override_settings(HERE_API_KEY="")
-    def test_locations_without_api_key(self):
+    @patch("planner.api.views.autosuggest", side_effect=ProviderError("Geocoder unavailable"))
+    def test_locations_provider_error(self, _mock):
         res = Client().get("/api/locations", {"q": "Chicago"})
         self.assertEqual(res.status_code, 502)
         self.assertIn("error", res.json())
@@ -31,7 +37,7 @@ class PlanApiValidationTests(TestCase):
             "origin_lon": -87.63,
             "dest_lat": 39.74,
             "dest_lon": -104.99,
-            "departure": "2026-06-01T12:00:00Z",
+            "departure": (timezone.now() + timedelta(hours=1)).isoformat(),
             "timezone": "America/Chicago",
             "load_lb": 0,
             "interval_mi": 25,
@@ -39,14 +45,17 @@ class PlanApiValidationTests(TestCase):
         res = Client().post("/api/plan", data=payload, content_type="application/json")
         self.assertEqual(res.status_code, 400)
 
-    @override_settings(HERE_API_KEY="")
-    def test_plan_without_here_key(self):
+    @patch(
+        "planner.api.plan_build.truck_routes",
+        side_effect=ProviderError("Routing unavailable"),
+    )
+    def test_plan_routing_provider_error(self, _mock):
         payload = {
             "origin_lat": 41.88,
             "origin_lon": -87.63,
             "dest_lat": 39.74,
             "dest_lon": -104.99,
-            "departure": "2026-06-01T12:00:00Z",
+            "departure": (timezone.now() + timedelta(hours=1)).isoformat(),
             "timezone": "America/Chicago",
             "load_lb": 25000,
             "interval_mi": 25,
@@ -58,7 +67,7 @@ class PlanApiValidationTests(TestCase):
 class HeatmapApiValidationTests(TestCase):
     def test_heatmap_rejects_empty_routes(self):
         payload = {
-            "departure": "2026-06-01T12:00:00Z",
+            "departure": (timezone.now() + timedelta(hours=1)).isoformat(),
             "timezone": "America/Chicago",
             "load_lb": 25000,
             "routes": [],

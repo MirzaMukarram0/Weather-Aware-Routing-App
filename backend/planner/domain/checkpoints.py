@@ -44,6 +44,15 @@ def decode_flex_polyline(encoded: str) -> list[LatLon]:
     return [LatLon(lat=p[0], lon=p[1]) for p in pts]
 
 
+def polylines_to_latlon_lines(encodings: list[str]) -> list[list[tuple[float, float]]]:
+    lines: list[list[tuple[float, float]]] = []
+    for enc in encodings:
+        if not enc:
+            continue
+        lines.append([(p.lat, p.lon) for p in decode_flex_polyline(enc)])
+    return lines
+
+
 def cumulative_distances_m(points: list[LatLon]) -> list[float]:
     if not points:
         return []

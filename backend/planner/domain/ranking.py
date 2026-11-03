@@ -11,6 +11,7 @@ from planner.domain.risk import UNKNOWN, Level
 class CheckpointMiles:
     distance_mi: float
     level: Level | str
+    weather_complete: bool = True
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,7 @@ def attribute_miles(checkpoints: list[CheckpointMiles]) -> RouteSummary:
     incomplete = False
 
     for i, cp in enumerate(checkpoints):
+        incomplete = incomplete or not cp.weather_complete
         if i == 0:
             owned = checkpoints[1].distance_mi - cp.distance_mi if n > 1 else 0.0
             owned /= 2
@@ -114,7 +116,7 @@ def recommend_routes(summaries: list[RouteSummary], durations_s: list[float]) ->
         warnings.append("Recommended route has incomplete weather coverage.")
     reason = "Best overall by ranking"
     if len(keys) > 1:
-        others = [i for i in range(len(keys)) if i != winner]
+        others = sorted((i for i in range(len(keys)) if i != winner), key=lambda i: keys[i])
         if others:
             reason = explain_rank(keys[winner], keys[others[0]])
     return Recommendation(route_index=winner, reason=reason, warnings=warnings)

@@ -2,16 +2,20 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import UTC, datetime
+import math
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
 
 import httpx
 from django.conf import settings
 from django.core.cache import cache
 
+from planner.domain.geo import coord_key
 from planner.domain.risk import WeatherSample
-from planner.providers.here import ProviderError
+from planner.providers.errors import ProviderError
 
 OPEN_METEO_TIMEOUT = 45.0
+BATCH_CHUNK = 50
 EXPECTED_UNITS = {
     "wind_speed_10m": "mph",
     "wind_gusts_10m": "mph",
@@ -19,6 +23,30 @@ EXPECTED_UNITS = {
     "showers": "inch",
     "snowfall": "inch",
 }
+_WIND_MPH_ALIASES = frozenset({"mph", "mp/h", "mi/h"})
+
+
+def _as_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
+
+
+def _parse_hour_time(value: str) -> datetime:
+    return _as_utc(datetime.fromisoformat(value.replace("Z", "+00:00")))
+
+
+def _unit_matches(var: str, actual: str, expected: str) -> bool:
+    if var in ("wind_speed_10m", "wind_gusts_10m") and expected == "mph":
+        return actual in _WIND_MPH_ALIASES
+    return actual == expected
+
+
+def _validate_units(hourly_units: dict) -> None:
+    for var, expected in EXPECTED_UNITS.items():
+        actual = hourly_units.get(var)
+        if not _unit_matches(var, actual, expected):
+            raise ProviderError(f"Open-Meteo unit for {var} is {actual}, expected {expected}")
 
 
 def _cache_key(lat: float, lon: float, start: str, end: str) -> str:
@@ -29,67 +57,81 @@ def _cache_key(lat: float, lon: float, start: str, end: str) -> str:
 def _pick_wind_hour(times: list[str], eta: datetime) -> int | None:
     if not times:
         return None
-    eta = eta.astimezone(UTC)
-    best_idx = None
-    best_delta = None
-    for i, t in enumerate(times):
-        ts = datetime.fromisoformat(t.replace("Z", "+00:00"))
-        delta = abs((ts - eta).total_seconds())
-        if best_delta is None or delta < best_delta or (delta == best_delta and i > best_idx):
-            best_delta = delta
-            best_idx = i
-    return best_idx
+    eta = _as_utc(eta)
+    target = eta.replace(minute=0, second=0, microsecond=0)
+    if eta - target >= timedelta(minutes=30):
+        target += timedelta(hours=1)
+    return next((i for i, t in enumerate(times) if _parse_hour_time(t) == target), None)
 
 
 def _pick_precip_hour(times: list[str], eta: datetime) -> int | None:
     if not times:
         return None
-    eta = eta.astimezone(UTC)
-    chosen = None
-    for i, t in enumerate(times):
-        ts = datetime.fromisoformat(t.replace("Z", "+00:00"))
-        if ts >= eta:
-            chosen = i
-            break
-    if chosen is None:
-        return None
-    return chosen
+    eta = _as_utc(eta)
+    target = eta.replace(minute=0, second=0, microsecond=0)
+    if target < eta:
+        target += timedelta(hours=1)
+    return next((i for i, t in enumerate(times) if _parse_hour_time(t) == target), None)
 
 
-def _validate_units(hourly_units: dict) -> None:
-    for var, expected in EXPECTED_UNITS.items():
-        actual = hourly_units.get(var)
-        if actual and actual != expected:
-            raise ProviderError(f"Open-Meteo unit for {var} is {actual}, expected {expected}")
+def fetch_series_for_locations(
+    locs: list[tuple[float, float]],
+    start_utc: datetime,
+    end_utc: datetime,
+) -> dict[tuple[float, float], dict]:
+    if not locs:
+        return {}
+    start_s = _as_utc(start_utc).strftime("%Y-%m-%d")
+    end_date = min(
+        (_as_utc(end_utc) + timedelta(hours=1)).date(),
+        datetime.now(UTC).date() + timedelta(days=15),
+    )
+    end_s = end_date.isoformat()
+    out: dict[tuple[float, float], dict] = {}
+    missing = []
+    for lat, lon in dict.fromkeys(locs):
+        cached = cache.get(_cache_key(lat, lon, start_s, end_s))
+        if cached is not None:
+            out[coord_key(lat, lon)] = cached
+        else:
+            missing.append((lat, lon))
 
+    def fetch_chunk(chunk):
+        lats = ",".join(str(lat) for lat, _ in chunk)
+        lons = ",".join(str(lon) for _, lon in chunk)
+        params = {
+            "latitude": lats,
+            "longitude": lons,
+            "hourly": "wind_speed_10m,wind_gusts_10m,rain,showers,snowfall",
+            "wind_speed_unit": "mph",
+            "precipitation_unit": "inch",
+            "timezone": "UTC",
+            "start_date": start_s,
+            "end_date": end_s,
+        }
+        try:
+            with httpx.Client(timeout=OPEN_METEO_TIMEOUT) as client:
+                resp = client.get(settings.OPEN_METEO_BASE, params=params)
+                resp.raise_for_status()
+                payload = resp.json()
+        except (httpx.HTTPError, ValueError) as exc:
+            raise ProviderError("Weather service unavailable. Please retry shortly.") from exc
+        series_list = payload if isinstance(payload, list) else [payload]
+        if len(series_list) != len(chunk) or not all(isinstance(s, dict) for s in series_list):
+            raise ProviderError("Weather service returned an incomplete batch.")
+        result = {}
+        for (lat, lon), series in zip(chunk, series_list, strict=True):
+            _validate_units(series.get("hourly_units", {}))
+            key = coord_key(lat, lon)
+            cache.set(_cache_key(lat, lon, start_s, end_s), series, settings.CACHE_TTL_WEATHER)
+            result[key] = series
+        return result
 
-def fetch_hourly_series(lat: float, lon: float, start_utc: datetime, end_utc: datetime) -> dict:
-    start_s = start_utc.astimezone(UTC).strftime("%Y-%m-%d")
-    end_s = end_utc.astimezone(UTC).strftime("%Y-%m-%d")
-    key = _cache_key(lat, lon, start_s, end_s)
-    cached = cache.get(key)
-    if cached is not None:
-        return cached
-
-    params = {
-        "latitude": lat,
-        "longitude": lon,
-        "hourly": "wind_speed_10m,wind_gusts_10m,rain,showers,snowfall",
-        "wind_speed_unit": "mph",
-        "precipitation_unit": "inch",
-        "timezone": "UTC",
-        "start_date": start_s,
-        "end_date": end_s,
-    }
-    with httpx.Client(timeout=OPEN_METEO_TIMEOUT) as client:
-        resp = client.get(settings.OPEN_METEO_BASE, params=params)
-        if resp.status_code >= 400:
-            raise ProviderError(f"Open-Meteo error {resp.status_code}")
-        data = resp.json()
-
-    _validate_units(data.get("hourly_units", {}))
-    cache.set(key, data, settings.CACHE_TTL_WEATHER)
-    return data
+    chunks = [missing[i : i + BATCH_CHUNK] for i in range(0, len(missing), BATCH_CHUNK)]
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        for result in pool.map(fetch_chunk, chunks):
+            out.update(result)
+    return out
 
 
 def sample_at_eta(series: dict, eta_utc: datetime) -> WeatherSample:
@@ -98,23 +140,27 @@ def sample_at_eta(series: dict, eta_utc: datetime) -> WeatherSample:
     wi = _pick_wind_hour(times, eta_utc)
     pi = _pick_precip_hour(times, eta_utc)
 
-    def val(key: str, idx: int | None) -> float | None:
+    def val(field: str, idx: int | None) -> float | None:
         if idx is None:
             return None
-        arr = hourly.get(key) or []
+        arr = hourly.get(field) or []
         if idx >= len(arr):
             return None
         v = arr[idx]
         if v is None:
             return None
-        return float(v)
+        try:
+            value = float(v)
+        except (TypeError, ValueError):
+            return None
+        return value if math.isfinite(value) and value >= 0 else None
 
     rain = None
     if pi is not None:
         r = val("rain", pi)
         s = val("showers", pi)
-        if r is not None or s is not None:
-            rain = (r or 0.0) + (s or 0.0)
+        if r is not None and s is not None:
+            rain = r + s
 
     return WeatherSample(
         wind_sustained_mph=val("wind_speed_10m", wi),
@@ -126,21 +172,20 @@ def sample_at_eta(series: dict, eta_utc: datetime) -> WeatherSample:
 
 def batch_samples(
     coords: list[tuple[float, float, datetime]],
-) -> dict[tuple[float, float], WeatherSample]:
+) -> dict[tuple[float, float, datetime], WeatherSample]:
     if not coords:
         return {}
-    min_eta = min(c[2] for c in coords)
-    max_eta = max(c[2] for c in coords)
-    start = min_eta
-    end = max_eta
+    start = min(c[2] for c in coords)
+    end = max(c[2] for c in coords)
+    unique_locs = list({coord_key(lat, lon) for lat, lon, _ in coords})
+    series_by_loc = fetch_series_for_locations(unique_locs, start, end)
 
-    unique_locs = {(round(lat, 6), round(lon, 6)) for lat, lon, _ in coords}
-    series_by_loc: dict[tuple[float, float], dict] = {}
-    for lat, lon in unique_locs:
-        series_by_loc[(lat, lon)] = fetch_hourly_series(lat, lon, start, end)
-
-    out: dict[tuple[float, float], WeatherSample] = {}
+    out: dict[tuple[float, float, datetime], WeatherSample] = {}
     for lat, lon, eta in coords:
-        loc = (round(lat, 6), round(lon, 6))
-        out[(lat, lon)] = sample_at_eta(series_by_loc[loc], eta)
+        ck = coord_key(lat, lon)
+        series = series_by_loc.get(ck)
+        if series is None:
+            out[(lat, lon, eta)] = WeatherSample(None, None, None, None)
+        else:
+            out[(lat, lon, eta)] = sample_at_eta(series, eta)
     return out
