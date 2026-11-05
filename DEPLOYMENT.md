@@ -1,4 +1,20 @@
-# Deployment: Vercel + Google Cloud Run
+# Deployment: Vercel + Render Free
+
+The selected backend host is now **Render Free**, replacing Cloud Run at the user's request. The GCP project `truck-routing-ahmed-2026` exists with billing disabled; nothing is deployed there.
+
+## Render deployment (current)
+
+1. Push the reviewed changes, including root `render.yaml`, to GitHub `main`.
+2. In Render, create a **Blueprint** from this repository. It defines exactly one Docker web service on `plan: free`, with no database, disk, cron job or paid add-on. Auto-deploy is off to avoid unnecessary builds.
+3. Set `SECRET_KEY` to a securely generated value of at least 50 characters. Generate it privately with `python -c "import secrets; print(secrets.token_urlsafe(64))"`; enter it only in Render's secret environment field, never in git or chat.
+4. Set `CORS_ALLOWED_ORIGINS` to the exact Vercel production origin. For initial local testing, use `http://localhost:5173`; replace/add the real frontend origin before public testing.
+5. Confirm the service says **Free ($0)** and deploy. Do not add a payment method or select a paid plan. The Dockerfile starts Gunicorn; no migrations or database are required.
+6. Verify the assigned HTTPS URL's `/api/health` returns `{"status":"ok"}`. Django automatically permits Render's assigned hostname and enables production HTTPS/security checks.
+7. Set Vercel's `VITE_API_URL` to that URL without a trailing slash, rebuild the frontend, and perform the acceptance checks below.
+
+Render Free sleeps after 15 idle minutes and can take about a minute to wake. It has usage limits and is intended for demos, not production availability. Without a payment method, applicable quota exhaustion suspends services instead of billing overages. Do not use keep-alive pings to defeat idle sleeping. See [Render Free limitations](https://render.com/docs/free).
+
+## Cloud Run alternative (requires billing; not currently authorized)
 
 Run these commands manually when ready to publish. No cloud resources were created by preparing these files. Examples use **Bash in Google Cloud Shell**, from the repository root; they are not PowerShell commands.
 

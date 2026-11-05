@@ -24,7 +24,7 @@ React + Django app that helps a truck driver pick the safest route given weather
 | Weather | Open-Meteo hourly, batched, `wind_speed_unit=mph`, `precipitation_unit=inch`. Rain = `rain + showers`. |
 | Backend | Django + DRF, stateless, Django cache (in-memory OK on Cloud Run). |
 | Frontend | Vite + React + TypeScript, MapLibre (`react-map-gl`) + deck.gl, OpenFreeMap Liberty basemap. |
-| Hosting | **Frontend:** Vercel. **Backend:** Docker on **Google Cloud Run** (`us-central1`). |
+| Hosting | **Frontend:** Vercel. **Backend:** Docker on **Render Free**, per user decision. Cloud Run is an optional alternative requiring billing. |
 | Tests | Django `unittest`; CI runs backend tests + ruff, frontend typecheck + lint + build. |
 
 ## API surface

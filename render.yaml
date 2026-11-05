@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: truck-routing-api
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    autoDeployTrigger: "off"
+    envVars:
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: NOMINATIM_USER_AGENT
+        value: "TruckRoutingAssessment/1.0 (https://github.com/MirzaMukarram0/Weather-Aware-Routing-App)"

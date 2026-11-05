@@ -12,9 +12,9 @@ def _env(key: str, default: str = "") -> str:
 
 DEBUG = _env("DEBUG", "false").lower() in ("1", "true", "yes")
 SECRET_KEY = _env("SECRET_KEY", "unsafe-dev-key")
-if _env("K_SERVICE"):
+if _env("K_SERVICE") or _env("RENDER") == "true":
     if DEBUG or len(SECRET_KEY) < 50 or SECRET_KEY == "unsafe-dev-key":
-        raise ImproperlyConfigured("Cloud Run requires DEBUG=false and a strong SECRET_KEY.")
+        raise ImproperlyConfigured("Hosting requires DEBUG=false and a strong SECRET_KEY.")
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True
     SECURE_REDIRECT_EXEMPT = [r"^api/health$"]
@@ -23,6 +23,8 @@ if _env("K_SERVICE"):
     CSRF_COOKIE_SECURE = True
 _hosts = _env("ALLOWED_HOSTS", "localhost,127.0.0.1")
 ALLOWED_HOSTS = [h.strip() for h in _hosts.split(",") if h.strip()]
+if _env("RENDER") == "true" and _env("RENDER_EXTERNAL_HOSTNAME"):
+    ALLOWED_HOSTS.append(_env("RENDER_EXTERNAL_HOSTNAME"))
 
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
