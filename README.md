@@ -9,7 +9,7 @@ React + Django app that recommends the safest of up to three **OSRM (OpenStreetM
 | Service | URL |
 |---------|-----|
 | Frontend (Vercel) | _Set after deploy — `VITE_API_URL` points to backend_ |
-| Backend (Cloud Run) | _Set after deploy_ |
+| Backend (Render Free) | _Set after deploy_ |
 
 ## Quick start (local)
 
@@ -71,7 +71,7 @@ GET  /api/health
 
 ## Deploy
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for Vercel setup, Cloud Run commands, secrets, CORS, cost controls, smoke tests and rollback.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for Render Free and Vercel setup, secrets, CORS, smoke tests and the optional Cloud Run alternative.
 
 ## Tests & CI
 

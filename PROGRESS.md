@@ -19,7 +19,7 @@
 ## Hosted URLs
 
 - Frontend: _deploy to Vercel_
-- Backend: _deploy to Cloud Run_
+- Backend: _deploy to Render Free_
 
 ## CI
 
@@ -37,3 +37,10 @@
 - [ ] Deploy and perform hosted browser/provider acceptance checks; URLs and Loom remain outstanding.
 
 Production checks retain two documented HSTS notices (subdomains/preload). Vite reports large map-library chunks; the map is lazy loaded. Public routing/geocoding services remain assessment-scale dependencies.
+
+## Render deployment — 2026-11-05
+
+- User selected Render Free to avoid enabling GCP billing. GCP project `truck-routing-ahmed-2026` exists with billing disabled.
+- Added root `render.yaml` (one free Docker web service, no datastore/disk, manual deploys), Render hostname detection and production HTTPS settings.
+- Verified 29 backend tests, Ruff lint/format, and Render-specific health/host/proxy/redirect checks.
+- Deployment pending: Render login works, but the connected GitHub installation cannot access `MirzaMukarram0/Weather-Aware-Routing-App`. User must grant access to this repository before deployment can proceed.
