@@ -12,10 +12,25 @@ const US_VIEW: MapViewState = { longitude: -97, latitude: 38.5, zoom: 3.6, pitch
 const ARROW = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="white"/><circle cx="24" cy="24" r="18" fill="#126b68"/><path d="M24 10L35 34L24 29L13 34Z" fill="white"/></svg>')}`;
 
 interface Props {
-  plan: PlanResponse | null; heatmap: HeatmapResponse | null; hourIndex: number; showWeather: boolean;
-  selectedRouteId: string | null; onSelectRoute: (id: string) => void;
+  plan: PlanResponse | null;
+  heatmap: HeatmapResponse | null;
+  hourIndex: number;
+  showWeather: boolean;
+  showPreview: boolean;
+  selectedRouteId: string | null;
+  onSelectRoute: (id: string) => void;
+  onHidePreview?: () => void;
 }
-export function MapView({ plan, heatmap, hourIndex, showWeather, selectedRouteId, onSelectRoute }: Props) {
+export function MapView({
+  plan,
+  heatmap,
+  hourIndex,
+  showWeather,
+  showPreview,
+  selectedRouteId,
+  onSelectRoute,
+  onHidePreview,
+}: Props) {
   const container = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 800, height: 600 });
   const [view, setView] = useState<MapViewState>(US_VIEW);
@@ -31,7 +46,10 @@ export function MapView({ plan, heatmap, hourIndex, showWeather, selectedRouteId
     const bounds: [[number, number], [number, number]] = [
       [Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)],
     ];
-    const fittedView = new WebMercatorViewport(size).fitBounds(bounds, { padding: { top: 120, bottom: 175, left: 55, right: 55 }, maxZoom: 10 });
+    const fittedView = new WebMercatorViewport(size).fitBounds(bounds, {
+      padding: { top: 100, bottom: 140, left: 48, right: 48 },
+      maxZoom: 10,
+    });
     return { longitude: fittedView.longitude, latitude: fittedView.latitude, zoom: fittedView.zoom, pitch: 0, bearing: 0 };
   }, [paths, size]);
   const flyTo = (target: MapViewState) => setView({ ...target, transitionDuration: preview.reducedMotion ? 0 : 1200, transitionInterpolator: new FlyToInterpolator() });
@@ -74,7 +92,9 @@ export function MapView({ plan, heatmap, hourIndex, showWeather, selectedRouteId
       new TextLayer<Checkpoint>({ id: 'endpoint-labels', data: endpoints, getPosition: d => [d.lon, d.lat], getText: (_, { index }) => index === 0 ? 'A' : 'B',
         getSize: 11, getColor: [255, 255, 255], fontFamily: 'Arial', fontWeight: 'bold' })];
   }, [route]);
-  const vehicle = new IconLayer({ id: 'route-preview', data: route ? [{ position: preview.point }] : [],
+  const vehicle = new IconLayer({
+    id: 'route-preview',
+    data: route && showPreview ? [{ position: preview.point }] : [],
     getPosition: d => d.position, getIcon: () => ({ url: ARROW, width: 48, height: 48, anchorY: 24 }),
     getSize: 36, getAngle: preview.angle, updateTriggers: { getAngle: preview.angle }, billboard: true,
   });
@@ -82,7 +102,16 @@ export function MapView({ plan, heatmap, hourIndex, showWeather, selectedRouteId
   return <div className="map-wrap" ref={container}>
     <DeckGL viewState={view} onViewStateChange={({ viewState }) => setView(viewState as MapViewState)} controller
       layers={[weatherLayer, ...routeLayers, ...checkpointLayers, vehicle]} getCursor={({ isHovering }) => isHovering ? 'pointer' : 'grab'}>
-      <Map mapStyle="https://tiles.openfreemap.org/styles/liberty" attributionControl onError={() => setMapError(true)} />
+      <Map mapStyle="https://tiles.openfreemap.org/styles/liberty" attributionControl={false} onError={() => setMapError(true)} />
+      <p className="map-attrib">
+        <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
+          © OSM
+        </a>
+        {' · '}
+        <a href="https://maplibre.org/" target="_blank" rel="noreferrer">
+          MapLibre
+        </a>
+      </p>
     </DeckGL>
     <div className="map-controls" aria-label="Map controls">
       <button type="button" aria-label="Zoom in" onClick={() => setView(v => ({ ...v, zoom: Math.min(18, v.zoom + 1) }))}>+</button>
@@ -90,12 +119,30 @@ export function MapView({ plan, heatmap, hourIndex, showWeather, selectedRouteId
       <button type="button" aria-label="Fit all routes" title="Fit all routes" onClick={() => flyTo(fitted)}>⌖</button>
     </div>
     {mapError && <p className="map-error" role="status">Some map tiles could not load. Route results remain available.</p>}
-    {route && <div className="preview-controls">
-      <button type="button" onClick={preview.toggle} aria-label={preview.playing ? 'Pause route preview' : 'Play route preview'}>{preview.playing ? 'Ⅱ' : '▶'}</button>
-      <div><strong>Route preview <span>{Math.round(preview.progress * 100)}%</span></strong><small>Illustration · not live navigation</small>
-        <div className="preview-progress"><span style={{ width: `${preview.progress * 100}%` }} /></div></div>
-      <button type="button" onClick={preview.replay} aria-label="Replay route preview">↻</button>
-    </div>}
+    {route && showPreview && (
+      <div className="preview-controls map-panel">
+        {onHidePreview && (
+          <button type="button" className="map-panel__close" aria-label="Hide route preview" onClick={onHidePreview}>
+            ×
+          </button>
+        )}
+        <button type="button" onClick={preview.toggle} aria-label={preview.playing ? 'Pause route preview' : 'Play route preview'}>
+          {preview.playing ? 'Ⅱ' : '▶'}
+        </button>
+        <div>
+          <strong>
+            Route preview <span>{Math.round(preview.progress * 100)}%</span>
+          </strong>
+          <small>Illustration · not live navigation</small>
+          <div className="preview-progress">
+            <span style={{ width: `${preview.progress * 100}%` }} />
+          </div>
+        </div>
+        <button type="button" onClick={preview.replay} aria-label="Replay route preview">
+          ↻
+        </button>
+      </div>
+    )}
     {tooltip && plan && <div className="checkpoint-tooltip" role="status" style={{ left: Math.min(size.width - 260, Math.max(12, tooltip.x + 14)), top: Math.max(12, Math.min(size.height - 260, tooltip.y - 60)) }}>
       <div className="tooltip-title"><strong>Mile {tooltip.cp.distance_mi.toFixed(1)}</strong><span>{tooltip.cp.risk_level.replace('_', ' ')}</span></div>
       <p>{new Date(tooltip.cp.eta_utc).toLocaleString(undefined, { timeZone: plan.timezone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}</p>

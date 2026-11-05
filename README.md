@@ -20,7 +20,7 @@ cd backend
 python -m venv .venv
 .venv\Scripts\activate   # Windows
 pip install -r requirements.txt
-copy .env.example .env     # optional: NOMINATIM_USER_AGENT contact email
+# Export NOMINATIM_USER_AGENT with your contact; Django reads process environment variables.
 python manage.py runserver 8080
 ```
 
@@ -71,39 +71,7 @@ GET  /api/health
 
 ## Deploy
 
-### Backend — Google Cloud Run
-
-1. Build and push image (from repo root):
-
-   ```bash
-   gcloud builds submit --tag gcr.io/PROJECT_ID/weather-routing backend
-   ```
-
-2. Deploy:
-
-   ```bash
-   gcloud run deploy weather-routing-api \
-     --image gcr.io/PROJECT_ID/weather-routing \
-     --region us-central1 \
-     --platform managed \
-     --allow-unauthenticated \
-     --memory 512Mi \
-     --cpu 1 \
-     --min-instances 0 \
-     --max-instances 1 \
-     --set-env-vars "DEBUG=false,ALLOWED_HOSTS=YOUR_CLOUD_RUN_HOST,CORS_ALLOWED_ORIGINS=https://YOUR_VERCEL_APP.vercel.app,NOMINATIM_USER_AGENT=YourApp/1.0 (you@example.com)" \
-     --set-secrets "SECRET_KEY=django-secret:latest"
-   ```
-
-   For demo recording, temporarily `--min-instances 1` to avoid cold starts.
-
-3. Set `$5 budget alert` in GCP Billing → Budgets.
-
-### Frontend — Vercel
-
-1. Import repo; root directory **`frontend`**.
-2. Env: `VITE_API_URL=https://YOUR_CLOUD_RUN_URL` (no trailing slash).
-3. Deploy; confirm CORS on backend matches Vercel origin.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for Vercel setup, Cloud Run commands, secrets, CORS, cost controls, smoke tests and rollback.
 
 ## Tests & CI
 

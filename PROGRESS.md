@@ -25,3 +25,15 @@
 
 - Backend: `manage.py test`, `ruff check`
 - Frontend: `typecheck`, `lint`, `build`
+
+## Deployment preparation — 2026-11-05
+
+- [x] Final local checks: 29 Django tests, Ruff lint/format, TypeScript, ESLint and production Vite build.
+- [x] Non-root Cloud Run Dockerfile, PORT-aware Gunicorn, Cloud Build config and upload exclusions.
+- [x] Vercel build/SPA/header configuration; deployment guide with Secret Manager, runtime IAM, CORS, budgets and rollback.
+- [x] Production Django configuration: fail closed on weak/missing secret, HTTPS proxy handling, CSRF/clickjacking middleware.
+- [x] CI now includes formatting and Docker build/runtime smoke checks.
+- [x] Docker image build and runtime smoke check: non-root Gunicorn, custom PORT, health JSON, proxy HTTPS and security headers. All 29 backend tests also pass inside the Linux image.
+- [ ] Deploy and perform hosted browser/provider acceptance checks; URLs and Loom remain outstanding.
+
+Production checks retain two documented HSTS notices (subdomains/preload). Vite reports large map-library chunks; the map is lazy loaded. Public routing/geocoding services remain assessment-scale dependencies.
