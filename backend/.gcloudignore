@@ -1,0 +1,13 @@
+.gcloudignore
+.git
+**/__pycache__
+**/*.pyc
+.venv
+venv
+.env
+.env.*
+*.pem
+*.key
+db.sqlite3
+staticfiles
+.ruff_cache

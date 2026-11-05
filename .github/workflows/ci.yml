@@ -19,6 +19,9 @@ jobs:
       - run: pip install -r requirements.txt ruff
       - run: python manage.py test
       - run: ruff check .
+      - run: ruff format --check .
+      - run: docker build -t weather-routing-check .
+      - run: docker run --rm weather-routing-check python scripts/container_smoke.py
 
   frontend:
     runs-on: ubuntu-latest
